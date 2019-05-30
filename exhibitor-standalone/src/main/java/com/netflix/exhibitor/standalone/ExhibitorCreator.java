@@ -38,6 +38,7 @@ import com.netflix.exhibitor.core.config.s3.S3ConfigArguments;
 import com.netflix.exhibitor.core.config.s3.S3ConfigAutoManageLockArguments;
 import com.netflix.exhibitor.core.config.s3.S3ConfigProvider;
 import com.netflix.exhibitor.core.config.zookeeper.ZookeeperConfigProvider;
+import com.netflix.exhibitor.core.s3.DefaultS3CredentialsProviderImpl;
 import com.netflix.exhibitor.core.s3.PropertyBasedS3ClientConfig;
 import com.netflix.exhibitor.core.s3.PropertyBasedS3Credential;
 import com.netflix.exhibitor.core.s3.S3ClientFactoryImpl;
@@ -146,7 +147,13 @@ public class ExhibitorCreator
         BackupProvider backupProvider = null;
         if ( "true".equalsIgnoreCase(commandLine.getOptionValue(S3_BACKUP)) )
         {
-            backupProvider = new S3BackupProvider(new S3ClientFactoryImpl(), awsCredentials, awsClientConfig, s3Region);
+            if (awsCredentials != null) {
+                backupProvider = new S3BackupProvider(new S3ClientFactoryImpl(), awsCredentials, awsClientConfig, s3Region);
+            }
+            else
+            {
+                backupProvider = new S3BackupProvider(new S3ClientFactoryImpl(), new DefaultS3CredentialsProviderImpl(), awsClientConfig, s3Region);
+            }
         }
         else if ( "true".equalsIgnoreCase(commandLine.getOptionValue(FILESYSTEMBACKUP)) )
         {
@@ -548,7 +555,13 @@ public class ExhibitorCreator
     private ConfigProvider getS3Provider(ExhibitorCLI cli, CommandLine commandLine, PropertyBasedS3Credential awsCredentials, PropertyBasedS3ClientConfig awsClientConfig, String hostname, Properties defaultProperties, String s3Region) throws Exception
     {
         String  prefix = cli.getOptions().hasOption(S3_CONFIG_PREFIX) ? commandLine.getOptionValue(S3_CONFIG_PREFIX) : DEFAULT_PREFIX;
-        return new S3ConfigProvider(new S3ClientFactoryImpl(), awsCredentials, awsClientConfig, getS3Arguments(cli, commandLine.getOptionValue(S3_CONFIG), prefix), hostname, defaultProperties, s3Region);
+        if (awsCredentials != null) {
+            return new S3ConfigProvider(new S3ClientFactoryImpl(), awsCredentials, awsClientConfig, getS3Arguments(cli, commandLine.getOptionValue(S3_CONFIG), prefix), hostname, defaultProperties, s3Region);
+        }
+        else
+        {
+            return new S3ConfigProvider(new S3ClientFactoryImpl(), new DefaultS3CredentialsProviderImpl(), awsClientConfig, getS3Arguments(cli, commandLine.getOptionValue(S3_CONFIG), prefix), hostname, defaultProperties, s3Region);
+        }
     }
 
     private ConfigProvider getConsulProvider(ExhibitorCLI cli, CommandLine commandLine, Properties defaultProperties) throws Exception {
